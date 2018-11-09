@@ -1,1 +1,1 @@
-<?php header('Location: https://eclipse.org/january/apidocs/2.2.0'); ?>
+<?php header('Location: 2.2.0'); exit(); ?>
