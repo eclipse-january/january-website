@@ -1,1 +1,1 @@
-<?php header('Location: 2.2.0'); exit(); ?>
+<?php header('Location: 2.3.0'); exit(); ?>

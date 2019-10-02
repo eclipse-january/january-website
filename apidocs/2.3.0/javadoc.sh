@@ -1,0 +1,1 @@
+/scratch/java/jdk8u222-b10/jre/../bin/javadoc @options @packages

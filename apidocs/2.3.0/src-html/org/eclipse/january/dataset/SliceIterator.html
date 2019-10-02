@@ -1,0 +1,420 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>/*-<a name="line.1"></a>
+<span class="sourceLineNo">002</span> *******************************************************************************<a name="line.2"></a>
+<span class="sourceLineNo">003</span> * Copyright (c) 2011, 2016 Diamond Light Source Ltd.<a name="line.3"></a>
+<span class="sourceLineNo">004</span> * All rights reserved. This program and the accompanying materials<a name="line.4"></a>
+<span class="sourceLineNo">005</span> * are made available under the terms of the Eclipse Public License v1.0<a name="line.5"></a>
+<span class="sourceLineNo">006</span> * which accompanies this distribution, and is available at<a name="line.6"></a>
+<span class="sourceLineNo">007</span> * http://www.eclipse.org/legal/epl-v10.html<a name="line.7"></a>
+<span class="sourceLineNo">008</span> *<a name="line.8"></a>
+<span class="sourceLineNo">009</span> * Contributors:<a name="line.9"></a>
+<span class="sourceLineNo">010</span> *    Peter Chang - initial API and implementation and/or initial documentation<a name="line.10"></a>
+<span class="sourceLineNo">011</span> *******************************************************************************/<a name="line.11"></a>
+<span class="sourceLineNo">012</span><a name="line.12"></a>
+<span class="sourceLineNo">013</span>package org.eclipse.january.dataset;<a name="line.13"></a>
+<span class="sourceLineNo">014</span><a name="line.14"></a>
+<span class="sourceLineNo">015</span><a name="line.15"></a>
+<span class="sourceLineNo">016</span>import java.util.Arrays;<a name="line.16"></a>
+<span class="sourceLineNo">017</span><a name="line.17"></a>
+<span class="sourceLineNo">018</span>/**     <a name="line.18"></a>
+<span class="sourceLineNo">019</span> * The {@code SliceIterator} class is use to run over a Slice of a Dataset.<a name="line.19"></a>
+<span class="sourceLineNo">020</span> * <a name="line.20"></a>
+<span class="sourceLineNo">021</span> * This is an Iterator thats allows the programmer to traverse the elements of a sliced Dataset and obtain the current position, the starts, steps,<a name="line.21"></a>
+<span class="sourceLineNo">022</span> * shapes.<a name="line.22"></a>
+<span class="sourceLineNo">023</span> * Moreover, there is possibilities to set the start point to begin at the wanted position.<a name="line.23"></a>
+<span class="sourceLineNo">024</span> */<a name="line.24"></a>
+<span class="sourceLineNo">025</span>public class SliceIterator extends IndexIterator {<a name="line.25"></a>
+<span class="sourceLineNo">026</span>        int[] shape;<a name="line.26"></a>
+<span class="sourceLineNo">027</span>        int isize;<a name="line.27"></a>
+<span class="sourceLineNo">028</span>        int endrank; // last shape index<a name="line.28"></a>
+<span class="sourceLineNo">029</span>        int[] gap; // gaps in dataset<a name="line.29"></a>
+<span class="sourceLineNo">030</span>        int imax; // maximum index in array<a name="line.30"></a>
+<span class="sourceLineNo">031</span>        int[] start;<a name="line.31"></a>
+<span class="sourceLineNo">032</span>        int[] stop;<a name="line.32"></a>
+<span class="sourceLineNo">033</span>        int[] step;<a name="line.33"></a>
+<span class="sourceLineNo">034</span>        int[] sshape; // slice shape<a name="line.34"></a>
+<span class="sourceLineNo">035</span>        int[] pos; // position in dataset<a name="line.35"></a>
+<span class="sourceLineNo">036</span>        int istep; // step in last index<a name="line.36"></a>
+<span class="sourceLineNo">037</span><a name="line.37"></a>
+<span class="sourceLineNo">038</span>        SliceIterator() {<a name="line.38"></a>
+<span class="sourceLineNo">039</span>        }<a name="line.39"></a>
+<span class="sourceLineNo">040</span><a name="line.40"></a>
+<span class="sourceLineNo">041</span>        /**<a name="line.41"></a>
+<span class="sourceLineNo">042</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.42"></a>
+<span class="sourceLineNo">043</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.43"></a>
+<span class="sourceLineNo">044</span>         * <a name="line.44"></a>
+<span class="sourceLineNo">045</span>         * @param shape<a name="line.45"></a>
+<span class="sourceLineNo">046</span>         *            Array of shapes of the Dataset<a name="line.46"></a>
+<span class="sourceLineNo">047</span>         * @param length<a name="line.47"></a>
+<span class="sourceLineNo">048</span>         *            Length of entire data array<a name="line.48"></a>
+<span class="sourceLineNo">049</span>         * @param sshape<a name="line.49"></a>
+<span class="sourceLineNo">050</span>         *            Shape of the new dataset, i.e. slice<a name="line.50"></a>
+<span class="sourceLineNo">051</span>         */<a name="line.51"></a>
+<span class="sourceLineNo">052</span>        public SliceIterator(final int[] shape, final int length, final int[] sshape) {<a name="line.52"></a>
+<span class="sourceLineNo">053</span>                this(shape, length, null, null, sshape, 1);<a name="line.53"></a>
+<span class="sourceLineNo">054</span>        }<a name="line.54"></a>
+<span class="sourceLineNo">055</span><a name="line.55"></a>
+<span class="sourceLineNo">056</span>        /**<a name="line.56"></a>
+<span class="sourceLineNo">057</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.57"></a>
+<span class="sourceLineNo">058</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.58"></a>
+<span class="sourceLineNo">059</span>         * <a name="line.59"></a>
+<span class="sourceLineNo">060</span>         * @param shape<a name="line.60"></a>
+<span class="sourceLineNo">061</span>         *            Array of shapes of the Dataset<a name="line.61"></a>
+<span class="sourceLineNo">062</span>         * @param length<a name="line.62"></a>
+<span class="sourceLineNo">063</span>         *            Length of entire data array<a name="line.63"></a>
+<span class="sourceLineNo">064</span>         * @param start<a name="line.64"></a>
+<span class="sourceLineNo">065</span>         *            Array of starts indexes, may be {@code null}<a name="line.65"></a>
+<span class="sourceLineNo">066</span>         * @param sshape<a name="line.66"></a>
+<span class="sourceLineNo">067</span>         *            Shape of the new dataset, i.e. slice<a name="line.67"></a>
+<span class="sourceLineNo">068</span>         */<a name="line.68"></a>
+<span class="sourceLineNo">069</span>        public SliceIterator(final int[] shape, final int length, final int[] start, final int[] sshape) {<a name="line.69"></a>
+<span class="sourceLineNo">070</span>                this(shape, length, start, null, sshape, 1);<a name="line.70"></a>
+<span class="sourceLineNo">071</span>        }<a name="line.71"></a>
+<span class="sourceLineNo">072</span><a name="line.72"></a>
+<span class="sourceLineNo">073</span>        /**<a name="line.73"></a>
+<span class="sourceLineNo">074</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.74"></a>
+<span class="sourceLineNo">075</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.75"></a>
+<span class="sourceLineNo">076</span>         * <a name="line.76"></a>
+<span class="sourceLineNo">077</span>         * @param shape<a name="line.77"></a>
+<span class="sourceLineNo">078</span>         *            Array of shapes of the Dataset<a name="line.78"></a>
+<span class="sourceLineNo">079</span>         * @param length<a name="line.79"></a>
+<span class="sourceLineNo">080</span>         *            Length of entire data array<a name="line.80"></a>
+<span class="sourceLineNo">081</span>         * @param sshape<a name="line.81"></a>
+<span class="sourceLineNo">082</span>         *            Shape of the new dataset, i.e. slice<a name="line.82"></a>
+<span class="sourceLineNo">083</span>         * @param isize<a name="line.83"></a>
+<span class="sourceLineNo">084</span>         *            Number of elements in an item<a name="line.84"></a>
+<span class="sourceLineNo">085</span>         */<a name="line.85"></a>
+<span class="sourceLineNo">086</span>        public SliceIterator(final int[] shape, final int length, final int[] sshape, final int isize) {<a name="line.86"></a>
+<span class="sourceLineNo">087</span>                this(shape, length, null, null, sshape, isize);<a name="line.87"></a>
+<span class="sourceLineNo">088</span>        }<a name="line.88"></a>
+<span class="sourceLineNo">089</span><a name="line.89"></a>
+<span class="sourceLineNo">090</span>        /**<a name="line.90"></a>
+<span class="sourceLineNo">091</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.91"></a>
+<span class="sourceLineNo">092</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.92"></a>
+<span class="sourceLineNo">093</span>         * <a name="line.93"></a>
+<span class="sourceLineNo">094</span>         * @param shape<a name="line.94"></a>
+<span class="sourceLineNo">095</span>         *            Array of shapes of the Dataset<a name="line.95"></a>
+<span class="sourceLineNo">096</span>         * @param length<a name="line.96"></a>
+<span class="sourceLineNo">097</span>         *            Length of entire data array<a name="line.97"></a>
+<span class="sourceLineNo">098</span>         * @param start<a name="line.98"></a>
+<span class="sourceLineNo">099</span>         *            Array of starts indexes, may be {@code null}<a name="line.99"></a>
+<span class="sourceLineNo">100</span>         * @param sshape<a name="line.100"></a>
+<span class="sourceLineNo">101</span>         *            Shape of the new dataset, i.e. slice<a name="line.101"></a>
+<span class="sourceLineNo">102</span>         * @param isize<a name="line.102"></a>
+<span class="sourceLineNo">103</span>         *            Number of elements in an item<a name="line.103"></a>
+<span class="sourceLineNo">104</span>         */<a name="line.104"></a>
+<span class="sourceLineNo">105</span>        public SliceIterator(final int[] shape, final int length, final int[] start, final int[] sshape, final int isize) {<a name="line.105"></a>
+<span class="sourceLineNo">106</span>                this(shape, length, start, null, sshape, isize);<a name="line.106"></a>
+<span class="sourceLineNo">107</span>        }<a name="line.107"></a>
+<span class="sourceLineNo">108</span><a name="line.108"></a>
+<span class="sourceLineNo">109</span>        /**<a name="line.109"></a>
+<span class="sourceLineNo">110</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.110"></a>
+<span class="sourceLineNo">111</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.111"></a>
+<span class="sourceLineNo">112</span>         * <a name="line.112"></a>
+<span class="sourceLineNo">113</span>         * @param shape<a name="line.113"></a>
+<span class="sourceLineNo">114</span>         *            Array of shapes of the Dataset<a name="line.114"></a>
+<span class="sourceLineNo">115</span>         * @param length<a name="line.115"></a>
+<span class="sourceLineNo">116</span>         *            Length of entire data array<a name="line.116"></a>
+<span class="sourceLineNo">117</span>         * @param start<a name="line.117"></a>
+<span class="sourceLineNo">118</span>         *            Array of starts indexes, may be {@code null}<a name="line.118"></a>
+<span class="sourceLineNo">119</span>         * @param step<a name="line.119"></a>
+<span class="sourceLineNo">120</span>         *            Array of steps, may be {@code null}, but can't be 0<a name="line.120"></a>
+<span class="sourceLineNo">121</span>         * @param sshape<a name="line.121"></a>
+<span class="sourceLineNo">122</span>         *            shape of new dataset, i.e. slice<a name="line.122"></a>
+<span class="sourceLineNo">123</span>         */<a name="line.123"></a>
+<span class="sourceLineNo">124</span>        public SliceIterator(final int[] shape, final int length, final int[] start, final int[] step, final int[] sshape) {<a name="line.124"></a>
+<span class="sourceLineNo">125</span>                this(shape, length, start, step, sshape, 1);<a name="line.125"></a>
+<span class="sourceLineNo">126</span>        }<a name="line.126"></a>
+<span class="sourceLineNo">127</span><a name="line.127"></a>
+<span class="sourceLineNo">128</span>        /**<a name="line.128"></a>
+<span class="sourceLineNo">129</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.129"></a>
+<span class="sourceLineNo">130</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.130"></a>
+<span class="sourceLineNo">131</span>         * <a name="line.131"></a>
+<span class="sourceLineNo">132</span>         * @param shape<a name="line.132"></a>
+<span class="sourceLineNo">133</span>         *            Array of shapes of the Dataset<a name="line.133"></a>
+<span class="sourceLineNo">134</span>         * @param length<a name="line.134"></a>
+<span class="sourceLineNo">135</span>         *            Length of entire data array<a name="line.135"></a>
+<span class="sourceLineNo">136</span>         * @param slice<a name="line.136"></a>
+<span class="sourceLineNo">137</span>         *            SliceND to iterate on<a name="line.137"></a>
+<span class="sourceLineNo">138</span>         */<a name="line.138"></a>
+<span class="sourceLineNo">139</span>        public SliceIterator(final int[] shape, final int length, final SliceND slice) {<a name="line.139"></a>
+<span class="sourceLineNo">140</span>                this(shape, length, slice.getStart(), slice.getStep(), slice.getShape(), 1);<a name="line.140"></a>
+<span class="sourceLineNo">141</span>        }<a name="line.141"></a>
+<span class="sourceLineNo">142</span><a name="line.142"></a>
+<span class="sourceLineNo">143</span>        /**<a name="line.143"></a>
+<span class="sourceLineNo">144</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.144"></a>
+<span class="sourceLineNo">145</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.145"></a>
+<span class="sourceLineNo">146</span>         * <a name="line.146"></a>
+<span class="sourceLineNo">147</span>         * @param shape<a name="line.147"></a>
+<span class="sourceLineNo">148</span>         *            Array of shapes of the Dataset<a name="line.148"></a>
+<span class="sourceLineNo">149</span>         * @param length<a name="line.149"></a>
+<span class="sourceLineNo">150</span>         *            Length of entire data array<a name="line.150"></a>
+<span class="sourceLineNo">151</span>         * @param isize<a name="line.151"></a>
+<span class="sourceLineNo">152</span>         *            Number of elements in an item<a name="line.152"></a>
+<span class="sourceLineNo">153</span>         * @param slice<a name="line.153"></a>
+<span class="sourceLineNo">154</span>         *            SliceND to iterate on<a name="line.154"></a>
+<span class="sourceLineNo">155</span>         */<a name="line.155"></a>
+<span class="sourceLineNo">156</span>        public SliceIterator(final int[] shape, final int length, final int isize, final SliceND slice) {<a name="line.156"></a>
+<span class="sourceLineNo">157</span>                this(shape, length, slice.getStart(), slice.getStep(), slice.getShape(), isize);<a name="line.157"></a>
+<span class="sourceLineNo">158</span>        }<a name="line.158"></a>
+<span class="sourceLineNo">159</span><a name="line.159"></a>
+<span class="sourceLineNo">160</span>        /**<a name="line.160"></a>
+<span class="sourceLineNo">161</span>         * Constructs an SliceIterator Object, which can iterate over sliced<a name="line.161"></a>
+<span class="sourceLineNo">162</span>         * Datasets elements, by default the start set to 0 and with a step of 1.<a name="line.162"></a>
+<span class="sourceLineNo">163</span>         * <a name="line.163"></a>
+<span class="sourceLineNo">164</span>         * @param shape<a name="line.164"></a>
+<span class="sourceLineNo">165</span>         *            Array of shapes of the Dataset<a name="line.165"></a>
+<span class="sourceLineNo">166</span>         * @param length<a name="line.166"></a>
+<span class="sourceLineNo">167</span>         *            Length of entire data array<a name="line.167"></a>
+<span class="sourceLineNo">168</span>         * @param start<a name="line.168"></a>
+<span class="sourceLineNo">169</span>         *            Array of starts indexes, may be {@code null}<a name="line.169"></a>
+<span class="sourceLineNo">170</span>         * @param step<a name="line.170"></a>
+<span class="sourceLineNo">171</span>         *            Array of steps, may be {@code null}, but can't be 0<a name="line.171"></a>
+<span class="sourceLineNo">172</span>         * @param sshape<a name="line.172"></a>
+<span class="sourceLineNo">173</span>         *            Shape of the new dataset, i.e. slice<a name="line.173"></a>
+<span class="sourceLineNo">174</span>         * @param isize<a name="line.174"></a>
+<span class="sourceLineNo">175</span>         *            Number of elements in an item<a name="line.175"></a>
+<span class="sourceLineNo">176</span>         */<a name="line.176"></a>
+<span class="sourceLineNo">177</span>        public SliceIterator(final int[] shape, final int length, final int[] start, final int[] step, final int[] sshape,<a name="line.177"></a>
+<span class="sourceLineNo">178</span>                        final int isize) {<a name="line.178"></a>
+<span class="sourceLineNo">179</span>                this.isize = isize;<a name="line.179"></a>
+<span class="sourceLineNo">180</span>                int rank = shape.length;<a name="line.180"></a>
+<span class="sourceLineNo">181</span>                endrank = rank - 1;<a name="line.181"></a>
+<span class="sourceLineNo">182</span>                this.shape = shape;<a name="line.182"></a>
+<span class="sourceLineNo">183</span>                this.start = new int[rank];<a name="line.183"></a>
+<span class="sourceLineNo">184</span>                this.sshape = sshape;<a name="line.184"></a>
+<span class="sourceLineNo">185</span>                if (step == null) {<a name="line.185"></a>
+<span class="sourceLineNo">186</span>                        this.step = new int[rank];<a name="line.186"></a>
+<span class="sourceLineNo">187</span>                        Arrays.fill(this.step, 1);<a name="line.187"></a>
+<span class="sourceLineNo">188</span>                } else {<a name="line.188"></a>
+<span class="sourceLineNo">189</span>                        this.step = step;<a name="line.189"></a>
+<span class="sourceLineNo">190</span>                }<a name="line.190"></a>
+<span class="sourceLineNo">191</span><a name="line.191"></a>
+<span class="sourceLineNo">192</span>                if (rank == 0) {<a name="line.192"></a>
+<span class="sourceLineNo">193</span>                        istep = isize;<a name="line.193"></a>
+<span class="sourceLineNo">194</span>                        imax = length * isize;<a name="line.194"></a>
+<span class="sourceLineNo">195</span>                        stop = new int[0];<a name="line.195"></a>
+<span class="sourceLineNo">196</span>                        pos = new int[0];<a name="line.196"></a>
+<span class="sourceLineNo">197</span>                        gap = null;<a name="line.197"></a>
+<span class="sourceLineNo">198</span>                } else {<a name="line.198"></a>
+<span class="sourceLineNo">199</span>                        istep = this.step[endrank] * isize;<a name="line.199"></a>
+<span class="sourceLineNo">200</span>                        imax = length * isize;<a name="line.200"></a>
+<span class="sourceLineNo">201</span>                        stop = new int[rank];<a name="line.201"></a>
+<span class="sourceLineNo">202</span>                        gap = new int[endrank + 1];<a name="line.202"></a>
+<span class="sourceLineNo">203</span>                        pos = new int[rank];<a name="line.203"></a>
+<span class="sourceLineNo">204</span>                        calcGap();<a name="line.204"></a>
+<span class="sourceLineNo">205</span>                }<a name="line.205"></a>
+<span class="sourceLineNo">206</span><a name="line.206"></a>
+<span class="sourceLineNo">207</span>                setStart(start);<a name="line.207"></a>
+<span class="sourceLineNo">208</span>        }<a name="line.208"></a>
+<span class="sourceLineNo">209</span><a name="line.209"></a>
+<span class="sourceLineNo">210</span>        void calcGap() {<a name="line.210"></a>
+<span class="sourceLineNo">211</span>                int chunk = isize;<a name="line.211"></a>
+<span class="sourceLineNo">212</span>                for (int i = endrank; i &gt;= 0; i--) {<a name="line.212"></a>
+<span class="sourceLineNo">213</span>                        stop[i] = start[i] + sshape[i] * step[i];<a name="line.213"></a>
+<span class="sourceLineNo">214</span><a name="line.214"></a>
+<span class="sourceLineNo">215</span>                        if (step[i] &lt; 0) {<a name="line.215"></a>
+<span class="sourceLineNo">216</span>                                stop[i]++; // adjust for -ve steps so later code has more succinct test<a name="line.216"></a>
+<span class="sourceLineNo">217</span>                        }<a name="line.217"></a>
+<span class="sourceLineNo">218</span><a name="line.218"></a>
+<span class="sourceLineNo">219</span>                        if (i &gt; 0) {<a name="line.219"></a>
+<span class="sourceLineNo">220</span>                                gap[i] = (shape[i] * step[i - 1] - sshape[i] * step[i]) * chunk;<a name="line.220"></a>
+<span class="sourceLineNo">221</span>                                chunk *= shape[i];<a name="line.221"></a>
+<span class="sourceLineNo">222</span>                        }<a name="line.222"></a>
+<span class="sourceLineNo">223</span>                }<a name="line.223"></a>
+<span class="sourceLineNo">224</span>        }<a name="line.224"></a>
+<span class="sourceLineNo">225</span><a name="line.225"></a>
+<span class="sourceLineNo">226</span>        /**<a name="line.226"></a>
+<span class="sourceLineNo">227</span>         * Set the starts indexes to new positions, {@code if null} the start index<a name="line.227"></a>
+<span class="sourceLineNo">228</span>         * is set by default to 0<a name="line.228"></a>
+<span class="sourceLineNo">229</span>         * <a name="line.229"></a>
+<span class="sourceLineNo">230</span>         * @param newStart<a name="line.230"></a>
+<span class="sourceLineNo">231</span>         *            Array of new starts indexes (prefix with zeros if necessary),<a name="line.231"></a>
+<span class="sourceLineNo">232</span>         *            may be {@code null}<a name="line.232"></a>
+<span class="sourceLineNo">233</span>         */<a name="line.233"></a>
+<span class="sourceLineNo">234</span>        public void setStart(int... newStart) {<a name="line.234"></a>
+<span class="sourceLineNo">235</span>                final int rank = shape.length;<a name="line.235"></a>
+<span class="sourceLineNo">236</span>                if (rank == 0) {<a name="line.236"></a>
+<span class="sourceLineNo">237</span>                        index = -istep;<a name="line.237"></a>
+<span class="sourceLineNo">238</span>                        return;<a name="line.238"></a>
+<span class="sourceLineNo">239</span>                }<a name="line.239"></a>
+<span class="sourceLineNo">240</span><a name="line.240"></a>
+<span class="sourceLineNo">241</span>                if (newStart == null) {<a name="line.241"></a>
+<span class="sourceLineNo">242</span>                        for (int i = 0; i &lt; rank; i++) {<a name="line.242"></a>
+<span class="sourceLineNo">243</span>                                start[i] = 0;<a name="line.243"></a>
+<span class="sourceLineNo">244</span>                        }<a name="line.244"></a>
+<span class="sourceLineNo">245</span>                } else if (newStart.length &gt; rank) {<a name="line.245"></a>
+<span class="sourceLineNo">246</span>                        throw new IllegalArgumentException("Length of start array greater than rank");<a name="line.246"></a>
+<span class="sourceLineNo">247</span>                } else {<a name="line.247"></a>
+<span class="sourceLineNo">248</span>                        int extra = rank - newStart.length;<a name="line.248"></a>
+<span class="sourceLineNo">249</span>                        for (int i = 0; i &lt; extra; i++) {<a name="line.249"></a>
+<span class="sourceLineNo">250</span>                                start[i] = 0;<a name="line.250"></a>
+<span class="sourceLineNo">251</span>                        }<a name="line.251"></a>
+<span class="sourceLineNo">252</span>                        for (int i = 0; i &lt; newStart.length; i++) {<a name="line.252"></a>
+<span class="sourceLineNo">253</span>                                start[i + extra] = newStart[i];<a name="line.253"></a>
+<span class="sourceLineNo">254</span>                        }<a name="line.254"></a>
+<span class="sourceLineNo">255</span>                }<a name="line.255"></a>
+<span class="sourceLineNo">256</span><a name="line.256"></a>
+<span class="sourceLineNo">257</span>                reset();<a name="line.257"></a>
+<span class="sourceLineNo">258</span>                calcGap();<a name="line.258"></a>
+<span class="sourceLineNo">259</span>        }<a name="line.259"></a>
+<span class="sourceLineNo">260</span><a name="line.260"></a>
+<span class="sourceLineNo">261</span>        /**<a name="line.261"></a>
+<span class="sourceLineNo">262</span>         * Reset the Iterator to the first Slice.<a name="line.262"></a>
+<span class="sourceLineNo">263</span>         */<a name="line.263"></a>
+<span class="sourceLineNo">264</span>        @Override<a name="line.264"></a>
+<span class="sourceLineNo">265</span>        public void reset() {<a name="line.265"></a>
+<span class="sourceLineNo">266</span>                if (shape.length == 0) {<a name="line.266"></a>
+<span class="sourceLineNo">267</span>                        index = -istep;<a name="line.267"></a>
+<span class="sourceLineNo">268</span>                } else {<a name="line.268"></a>
+<span class="sourceLineNo">269</span>                        // work out index of first position<a name="line.269"></a>
+<span class="sourceLineNo">270</span>                        for (int i = 0; i &lt; shape.length; i++) {<a name="line.270"></a>
+<span class="sourceLineNo">271</span>                                pos[i] = start[i];<a name="line.271"></a>
+<span class="sourceLineNo">272</span>                        }<a name="line.272"></a>
+<span class="sourceLineNo">273</span>                        pos[endrank] -= step[endrank];<a name="line.273"></a>
+<span class="sourceLineNo">274</span><a name="line.274"></a>
+<span class="sourceLineNo">275</span>                        index = pos[0];<a name="line.275"></a>
+<span class="sourceLineNo">276</span>                        for (int j = 1; j &lt;= endrank; j++)<a name="line.276"></a>
+<span class="sourceLineNo">277</span>                                index = index * shape[j] + pos[j];<a name="line.277"></a>
+<span class="sourceLineNo">278</span>                        index *= isize;<a name="line.278"></a>
+<span class="sourceLineNo">279</span>                }<a name="line.279"></a>
+<span class="sourceLineNo">280</span>        }<a name="line.280"></a>
+<span class="sourceLineNo">281</span><a name="line.281"></a>
+<span class="sourceLineNo">282</span>        /**<a name="line.282"></a>
+<span class="sourceLineNo">283</span>         * Returns {@code true} if there is an other element after the current<a name="line.283"></a>
+<span class="sourceLineNo">284</span>         * Slice.<a name="line.284"></a>
+<span class="sourceLineNo">285</span>         * <a name="line.285"></a>
+<span class="sourceLineNo">286</span>         * @return Returns {@code true} if the iteration has more Slice, {@code false} in<a name="line.286"></a>
+<span class="sourceLineNo">287</span>         *         the other case<a name="line.287"></a>
+<span class="sourceLineNo">288</span>         */<a name="line.288"></a>
+<span class="sourceLineNo">289</span>        @Override<a name="line.289"></a>
+<span class="sourceLineNo">290</span>        public boolean hasNext() {<a name="line.290"></a>
+<span class="sourceLineNo">291</span>                // now move on one position in slice<a name="line.291"></a>
+<span class="sourceLineNo">292</span>                int j = endrank;<a name="line.292"></a>
+<span class="sourceLineNo">293</span>                for (; j &gt;= 0; j--) {<a name="line.293"></a>
+<span class="sourceLineNo">294</span>                        pos[j] += step[j];<a name="line.294"></a>
+<span class="sourceLineNo">295</span><a name="line.295"></a>
+<span class="sourceLineNo">296</span>                        if ((pos[j] &gt;= stop[j]) == (step[j] &gt; 0)) { <a name="line.296"></a>
+<span class="sourceLineNo">297</span>                                pos[j] = start[j]; // stop index has been adjusted in code for -ve steps<a name="line.297"></a>
+<span class="sourceLineNo">298</span>                                index += gap[j];<a name="line.298"></a>
+<span class="sourceLineNo">299</span>                        } else {<a name="line.299"></a>
+<span class="sourceLineNo">300</span>                                break;<a name="line.300"></a>
+<span class="sourceLineNo">301</span>                        }<a name="line.301"></a>
+<span class="sourceLineNo">302</span>                }<a name="line.302"></a>
+<span class="sourceLineNo">303</span>                if (j == -1 &amp;&amp; endrank &gt;= 0) {<a name="line.303"></a>
+<span class="sourceLineNo">304</span>                        return false;<a name="line.304"></a>
+<span class="sourceLineNo">305</span>                }<a name="line.305"></a>
+<span class="sourceLineNo">306</span><a name="line.306"></a>
+<span class="sourceLineNo">307</span>                index += istep;<a name="line.307"></a>
+<span class="sourceLineNo">308</span>                return index &lt; imax;<a name="line.308"></a>
+<span class="sourceLineNo">309</span>        }<a name="line.309"></a>
+<span class="sourceLineNo">310</span><a name="line.310"></a>
+<span class="sourceLineNo">311</span>        /**<a name="line.311"></a>
+<span class="sourceLineNo">312</span>         * Returns an array of starts indexes.<a name="line.312"></a>
+<span class="sourceLineNo">313</span>         * <a name="line.313"></a>
+<span class="sourceLineNo">314</span>         * @return Array of starts indexes<a name="line.314"></a>
+<span class="sourceLineNo">315</span>         */<a name="line.315"></a>
+<span class="sourceLineNo">316</span>        public int[] getStart() {<a name="line.316"></a>
+<span class="sourceLineNo">317</span>                return start;<a name="line.317"></a>
+<span class="sourceLineNo">318</span>        }<a name="line.318"></a>
+<span class="sourceLineNo">319</span><a name="line.319"></a>
+<span class="sourceLineNo">320</span>        /**<a name="line.320"></a>
+<span class="sourceLineNo">321</span>         * Returns the current position of the iterator.<a name="line.321"></a>
+<span class="sourceLineNo">322</span>         * <a name="line.322"></a>
+<span class="sourceLineNo">323</span>         * @return Iterator current position<a name="line.323"></a>
+<span class="sourceLineNo">324</span>         */<a name="line.324"></a>
+<span class="sourceLineNo">325</span>        @Override<a name="line.325"></a>
+<span class="sourceLineNo">326</span>        public int[] getPos() {<a name="line.326"></a>
+<span class="sourceLineNo">327</span>                return pos;<a name="line.327"></a>
+<span class="sourceLineNo">328</span>        }<a name="line.328"></a>
+<span class="sourceLineNo">329</span><a name="line.329"></a>
+<span class="sourceLineNo">330</span>        /**<a name="line.330"></a>
+<span class="sourceLineNo">331</span>         * Returns an array of steps<a name="line.331"></a>
+<span class="sourceLineNo">332</span>         * <a name="line.332"></a>
+<span class="sourceLineNo">333</span>         * @return Array of steps<a name="line.333"></a>
+<span class="sourceLineNo">334</span>         */<a name="line.334"></a>
+<span class="sourceLineNo">335</span>        public int[] getStep() {<a name="line.335"></a>
+<span class="sourceLineNo">336</span>                return step;<a name="line.336"></a>
+<span class="sourceLineNo">337</span>        }<a name="line.337"></a>
+<span class="sourceLineNo">338</span><a name="line.338"></a>
+<span class="sourceLineNo">339</span>        /**<a name="line.339"></a>
+<span class="sourceLineNo">340</span>         * Returns an array of the Slices shapes.<a name="line.340"></a>
+<span class="sourceLineNo">341</span>         * <a name="line.341"></a>
+<span class="sourceLineNo">342</span>         * @return Array of shapes.<a name="line.342"></a>
+<span class="sourceLineNo">343</span>         */<a name="line.343"></a>
+<span class="sourceLineNo">344</span>        @Override<a name="line.344"></a>
+<span class="sourceLineNo">345</span>        public int[] getShape() {<a name="line.345"></a>
+<span class="sourceLineNo">346</span>                return sshape;<a name="line.346"></a>
+<span class="sourceLineNo">347</span>        }<a name="line.347"></a>
+<span class="sourceLineNo">348</span>}<a name="line.348"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>
